@@ -11,7 +11,9 @@ import connector.RabbitMQConnector;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.bind.JAXBContext;
@@ -30,14 +32,22 @@ public class RecipientList {
     private String queueName;
     private final String EXCHANGENAME = "whatRecipientList";
     private final MessageUtility util = new MessageUtility();
+    private Map<String, String> bankExchanges;
 
-    public void connect() throws IOException {
+    //initialize RecipientList
+    public void init() throws IOException {
+        bankExchanges = new HashMap();
+        bankExchanges.put("json", "whatTranslator.json");
+        bankExchanges.put("xml", "whatTranslator.xml");
+        bankExchanges.put("ws", "whatTranslator.ws");
+
         channel = connector.getChannel();
         channel.exchangeDeclare(EXCHANGENAME, "direct");
         queueName = channel.queueDeclare().getQueue();
         channel.queueBind(queueName, EXCHANGENAME, "");
     }
 
+    //Waiting asynchronously for messages
     public boolean receive() throws IOException {
 
         System.out.println(" [*] Waiting for messages.");
@@ -46,7 +56,8 @@ public class RecipientList {
             public void handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties, byte[] body) throws IOException {
                 System.out.println(" [x] Received ");
                 try {
-                    send(properties, body);
+                    String corrId = properties.getCorrelationId();
+                    send(corrId, body);
                 }
                 catch (JAXBException ex) {
                     Logger.getLogger(RecipientList.class.getName()).log(Level.SEVERE, null, ex);
@@ -56,12 +67,12 @@ public class RecipientList {
         channel.basicConsume(queueName, true, consumer);
         return true;
     }
-
+    //unmrashal from string to Object
     private DataFromGetBanks unmarchal(String bodyString) throws JAXBException {
         JAXBContext jc = JAXBContext.newInstance(DataFromGetBanks.class);
-        Unmarshaller unmarchaller = jc.createUnmarshaller();
+        Unmarshaller unmarshaller = jc.createUnmarshaller();
         StringReader reader = new StringReader(bodyString);
-        return (DataFromGetBanks) unmarchaller.unmarshal(reader);
+        return (DataFromGetBanks) unmarshaller.unmarshal(reader);
     }
 
     private String marchal(Data d) throws JAXBException {
@@ -80,23 +91,32 @@ public class RecipientList {
         return res.substring(res.indexOf("<?xml"));
     }
 
-    public boolean send(BasicProperties prop, byte[] body) throws IOException, JAXBException {
+    private BasicProperties propBuilder(String corrId) {
+        BasicProperties.Builder builder = new BasicProperties.Builder();
+        builder.correlationId(corrId);
+        BasicProperties prop = builder.build();
+        return prop;
+    }
+
+    public boolean send(String corrId, byte[] body) throws IOException, JAXBException {
         String bodyString = removeBom(new String(body));
         DataFromGetBanks data = unmarchal(bodyString);
         Data d = new Data(data.getSsn(), data.getCreditScore(), data.getLoanAmoount(), data.getLoanDuration());
+
         List<Bank> bankExchangeNames = data.getBankExchangeNames();
+        int totalBankAmount = bankExchangeNames.size();
+        int count = 1;
         for (Bank bank : bankExchangeNames) {
-            String translatorExchangeName = "whatTranslator." + bank.getType();
+            String translatorExchangeName = bankExchanges.get(bank.getType());
             String xmlString = marchal(d);
             body = util.serializeBody(xmlString);
-            
-            System.out.println("sending from rl: " + xmlString);
+            String newCorrId = corrId + "-" + count + "/" + totalBankAmount;
+            BasicProperties prop = propBuilder(newCorrId);
+            System.out.println("sending from rl to " + translatorExchangeName + " : " + xmlString);
             channel.basicPublish(translatorExchangeName, "", prop, body);
-
-            //somehow tell Aggregator how many messages
+            count++;
         }
         return true;
     }
-
 
 }

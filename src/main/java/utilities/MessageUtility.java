@@ -42,7 +42,7 @@ public class MessageUtility {
           SimpleDateFormat df= new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S z");      
 
 
-        return new XMLData(data.getSsn(),data.getCreditScore(),data.getLoanAmoount(),  df.format(durationDate));
+        return new XMLData(data.getSsn(),data.getCreditScore(),data.getLoanAmount(),  df.format(durationDate));
     }
 
 }
