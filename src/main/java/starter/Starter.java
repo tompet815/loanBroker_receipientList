@@ -7,6 +7,5 @@ public class Starter {
        public static void main(String[] argv) throws Exception {
         RecipientList rlist = new RecipientList();
         rlist.init();
-        rlist.receive();
     }
 }

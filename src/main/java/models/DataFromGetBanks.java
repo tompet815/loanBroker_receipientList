@@ -18,16 +18,16 @@ public class DataFromGetBanks  implements Serializable {
     private List<Bank> bankExchangeNames;
     private String ssn;
     private int creditScore;
-    private double loanAmoount;
+    private double loanAmount;
     private int loanDuration;
     public DataFromGetBanks() {
     }
 
-    public DataFromGetBanks(List<Bank> bankExchangeNames, String ssn, int creditScore, double loanAmoount, int loanDuration) {
+    public DataFromGetBanks(List<Bank> bankExchangeNames, String ssn, int creditScore, double loanAmount, int loanDuration) {
         this.bankExchangeNames = bankExchangeNames;
         this.ssn = ssn;
         this.creditScore = creditScore;
-        this.loanAmoount = loanAmoount;
+        this.loanAmount = loanAmount;
         this.loanDuration = loanDuration;
     }
 
@@ -55,12 +55,12 @@ public class DataFromGetBanks  implements Serializable {
         this.creditScore = creditScore;
     }
 
-    public double getLoanAmoount() {
-        return loanAmoount;
+    public double getLoanAmount() {
+        return loanAmount;
     }
 
-    public void setLoanAmoount(double loanAmoount) {
-        this.loanAmoount = loanAmoount;
+    public void setLoanAmount(double loanAmount) {
+        this.loanAmount = loanAmount;
     }
 
     public int getLoanDuration() {
