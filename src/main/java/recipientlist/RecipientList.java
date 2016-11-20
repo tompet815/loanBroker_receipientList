@@ -2,7 +2,7 @@ package recipientlist;
 
 import models.Data;
 import models.DataFromGetBanks;
-import com.rabbitmq.client.AMQP.BasicProperties;
+import com.rabbitmq.client.AMQP.*;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.DefaultConsumer;
@@ -121,24 +121,22 @@ public class RecipientList {
         int count = 1;
         //send message to each bank in the banklist. 
         for (Bank bank : bankExchangeNames) {
+            //creating headers that should be passed to Aggregator
             Map<String, Object> headers = new HashMap();
             headers.put("bankName", bank.getBankName());
             headers.put("total", totalBankAmount);
             headers.put("messageNo", count);
             headers.put("messageId", prop.getMessageId());
+            
             String translatorExchangeName = bankExchanges.get(bank.getType());
             String xmlString = marchal(d);
 
             body = util.serializeBody(xmlString);
-
-            //information is added in corrId about how many message aggregator is going to receive for the corrId
-            String newCorrId = corrId + "-" + bank.getBankName() + "-" + count + "/" + totalBankAmount;
-            BasicProperties newprop = propBuilder(newCorrId, headers);
+            BasicProperties newprop = propBuilder(corrId, headers);
             System.out.println("sending from rl to " + translatorExchangeName + " : " + xmlString);
             channel.basicPublish(translatorExchangeName, "", newprop, body);
             count++;
         }
         return true;
     }
-
 }
