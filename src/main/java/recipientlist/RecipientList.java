@@ -33,14 +33,10 @@ public class RecipientList {
     private final String EXCHANGENAME = "whatRecipientList";
     private final String TRANSLATOR_EXCHANGENAME = "whatTranslator";
     private final MessageUtility util = new MessageUtility();
-   // private Map<String, String> bankExchanges;
+
 
     //initialize RecipientList
     public void init() throws IOException {
-//        bankExchanges = new HashMap();
-//        bankExchanges.put("json", "whatTranslator.json");
-//        bankExchanges.put("xml", "whatTranslator.xml");
-//        bankExchanges.put("ws", "whatTranslator.ws");
 
         channel = connector.getChannel();
         channel.exchangeDeclare(EXCHANGENAME, "direct");
@@ -114,11 +110,9 @@ public class RecipientList {
         //creating data for sending
         String corrId = prop.getCorrelationId();
         String bodyString = removeBom(new String(body));
-        System.out.println(bodyString);
         
         DataFromGetBanks data = unmarchal(bodyString);
-       Data d = new Data(data.getSsn(), data.getCreditScore(), data.getLoanAmount(), data.getLoanDuration());
-        System.out.println(data.getBankExchangeNames().size());
+        Data d = new Data(data.getSsn(), data.getCreditScore(), data.getLoanAmount(), data.getLoanDuration());
         List<Bank> bankExchangeNames = data.getBankExchangeNames();
         int totalBankAmount = bankExchangeNames.size();
         int count = 1;
@@ -130,12 +124,11 @@ public class RecipientList {
             headers.put("total", totalBankAmount);
             headers.put("messageNo", count);
             
-//            String translatorExchangeName = bankExchanges.get(bank.getType());
             String xmlString = marchal(d);
-            System.out.println("xml here! "+xmlString);
+            System.out.println("Sending to Translator. Message: "+count+"/"+totalBankAmount+", Bank name: "+bank.getBankName()+", Routing key: "+bank.getType());
+            System.out.println(xmlString);
             body = util.serializeBody(xmlString);
             BasicProperties newprop = propBuilder(corrId, headers);
-           // System.out.println("sending from rl to " + translatorExchangeName + " : " + xmlString);
             channel.basicPublish(TRANSLATOR_EXCHANGENAME, bank.getType(), newprop, body);
             count++;
         }
